@@ -1,337 +1,310 @@
-const PACKS = {
-  ready: { label: 'پک آماده', price: 95000 },
-  personal: { label: 'پک شخصی', price: 129000 },
-  custom: { label: 'طراحی اختصاصی', price: 179000 }
+const SUPABASE_URL = "https://pawvlyivpwnbvkvjiduy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_nEhxIj5Vdbegu8_7gSDMlw_KOX1surQ";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const state = {
+  user: null, profile: null, isAdmin: false,
+  products: [], images: [], cart: [],
+  settings: null, currentOrder: null,
 };
-const FIRST_COUPON = 'TEHFIRST10';
-const FIRST_DISCOUNT = 0.10;
-const POST_SHIPPING = 134000;
-const SHIPPING = {
-  post: { label: 'پست', price: POST_SHIPPING, note: '۱۳۴ هزار تومان' },
-  'tehran-courier': { label: 'تهران — پیک', price: 0, note: 'پس‌کرایه' }
-};
-const DEFAULT_PRODUCTS = [
-  { id: 'drop-cherry', name: 'Cherry Drop', count: 12, tag: 'READY DROP', emoji: '🍒', bg: '#ff9fc9', image: '' },
-  { id: 'oops-pack', name: 'Oops! Pack', count: 16, tag: 'TEH ORIGINAL', emoji: '💥', bg: '#ffd84a', image: '' },
-  { id: 'daily-chaos', name: 'Daily Chaos', count: 10, tag: 'NEW', emoji: '⚡', bg: '#91c9ff', image: '' }
-];
 
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
-const toFa = (n) => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-const faMoney = (n) => `${toFa(Math.round(n / 1000))} هزار تومان`;
-const cleanPhone = (value) => value.replace(/[\s-]/g, '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
-const validPhone = (value) => /^09\d{9}$/.test(cleanPhone(value));
-const uid = () => `p-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const fmt = n => `${Number(n || 0).toLocaleString("fa-IR")} تومان`;
+const fa = n => Number(n || 0).toLocaleString("fa-IR");
+const uid = () => crypto.randomUUID();
+const productTypeLabel = t => ({ready:"پک آماده",personal:"پک شخصی",custom:"طراحی اختصاصی"})[t] || t;
+const statusLabel = s => ({
+  awaiting_payment:"در انتظار پرداخت", payment_review:"در انتظار بررسی رسید", paid:"پرداخت تأیید شد",
+  preparing:"در حال آماده‌سازی", shipped:"ارسال شد", completed:"تکمیل شد", cancelled:"لغو شد"
+})[s] || s;
+const safe = (v="") => String(v).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const slugify = v => (v || "product").trim().toLowerCase().replace(/\s+/g,"-").replace(/[^\w\u0600-\u06FF-]/g,"") + "-" + Math.random().toString(36).slice(2,7);
 
-const revealObserver = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-      revealObserver.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.08 });
-$$('.reveal').forEach((el) => revealObserver.observe(el));
-
-function getProducts() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('tehsticker-ready-products') || 'null');
-    return Array.isArray(saved) && saved.length ? saved : DEFAULT_PRODUCTS;
-  } catch { return DEFAULT_PRODUCTS; }
+function toast(msg, error=false){
+  const el=$("#toast"); el.textContent=msg; el.className="toast show"+(error?" error":"");
+  clearTimeout(window.__toast); window.__toast=setTimeout(()=>el.className="toast",3200);
 }
-function saveProducts(products) { localStorage.setItem('tehsticker-ready-products', JSON.stringify(products)); }
-let products = getProducts();
-let selectedReadyProductId = '';
-let selectedFiles = [];
-let couponApplied = false;
-let selectedShipping = '';
+function openModal(id){ const d=$("#"+id); if(!d.open)d.showModal(); }
+function closeModal(id){ const d=$("#"+id); if(d?.open)d.close(); }
+$$("[data-close]").forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
 
-const productGrid = $('#productGrid');
-const readyProductSelect = $('#readyProduct');
-function renderProducts() {
-  productGrid.innerHTML = '';
-  readyProductSelect.innerHTML = '<option value="">یک طرح رو انتخاب کن</option>';
-  products.forEach((p, index) => {
-    const card = document.createElement('article');
-    card.className = 'product-card reveal visible';
-    const visual = p.image
-      ? `<img src="${p.image}" alt="${escapeHtml(p.name)}">`
-      : `<div class="placeholder-art">${p.emoji || ['🍒','💥','⚡','🎧'][index % 4]}</div>`;
-    card.innerHTML = `
-      <div class="product-visual" style="background:${p.bg || '#f1e9dc'}">${visual}<span class="product-tag">${escapeHtml(p.tag || 'READY PACK')}</span></div>
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  state.user = session?.user || null;
+  await refreshIdentity();
+  await Promise.all([loadProducts(), loadSettings()]);
+  bindUI();
+}
+async function refreshIdentity(){
+  if(!state.user){ state.profile=null;state.isAdmin=false; updateAuthUI(); return; }
+  const {data} = await sb.from("profiles").select("*").eq("id",state.user.id).maybeSingle();
+  state.profile=data; state.isAdmin=data?.role==="admin"; updateAuthUI();
+}
+function updateAuthUI(){
+  $("#authBtn").hidden=!!state.user; $("#logoutBtn").hidden=!state.user; $("#ordersNav").hidden=!state.user;
+  $("#adminNav").hidden=!state.isAdmin;
+  if(state.profile){
+    $("#checkoutName").value=state.profile.full_name||"";
+    $("#checkoutPhone").value=state.profile.phone||"";
+  }
+}
+async function loadProducts(){
+  const {data,error}=await sb.from("products").select("*").order("sort_order").order("created_at");
+  if(error){ toast("محصولات لود نشدن",true); return; }
+  state.products=data||[];
+  const {data:imgs}=await sb.from("product_images").select("*").order("sort_order");
+  state.images=imgs||[];
+  renderProducts();
+}
+async function loadSettings(){
+  const {data}=await sb.from("site_settings").select("*").eq("id",1).maybeSingle();
+  state.settings=data||{};
+}
+function imageUrl(path){
+  if(!path)return null;
+  return sb.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+}
+function getProductImage(product){
+  const img=state.images.find(i=>i.product_id===product.id);
+  return imageUrl(img?.path || product.cover_image_path);
+}
+function renderProducts(filter="all"){
+  const list=state.products.filter(p=>filter==="all"||p.product_type===filter);
+  $("#productsGrid").innerHTML=list.length?list.map(p=>{
+    const img=getProductImage(p);
+    const stock=p.product_type==="ready" ? (p.stock_qty===null?"موجود":`${fa(p.stock_qty)} عدد موجود`) : `${fa(p.sticker_count||10)} استیکر`;
+    return `<article class="product-card">
+      <div class="product-image">${img?`<img src="${img}" alt="${safe(p.title)}">`:`<div class="product-placeholder">${p.product_type==="ready"?"✨":"📸"}</div>`}</div>
       <div class="product-body">
-        <h3>${escapeHtml(p.name)}</h3>
-        <div class="product-meta"><span class="product-count">${toFa(p.count)} عدد استیکر</span><span class="product-price">۹۵ هزار تومان</span></div>
-        <button type="button" data-buy-ready="${p.id}">سفارش همین پک 💥</button>
-      </div>`;
-    productGrid.appendChild(card);
-    const option = document.createElement('option');
-    option.value = p.id;
-    option.textContent = `${p.name} — ${toFa(p.count)} استیکر`;
-    readyProductSelect.appendChild(option);
+        <div class="product-meta"><span class="badge">${productTypeLabel(p.product_type)}</span><span class="price">${fmt(p.price)}</span></div>
+        <h3>${safe(p.title)}</h3><p>${safe(p.description||"")}</p>
+        <small>${stock}</small>
+        <div class="product-actions">
+          <button class="btn ghost" onclick="showProduct('${p.id}')">جزئیات</button>
+          <button class="btn primary" onclick="addToCart('${p.id}')" ${p.product_type==="ready"&&p.stock_qty===0?"disabled":""}>سفارش</button>
+        </div>
+      </div></article>`;
+  }).join(""):`<div class="empty">هنوز محصولی توی این بخش نیست.</div>`;
+}
+window.showProduct=id=>{
+  const p=state.products.find(x=>x.id===id); if(!p)return;
+  const imgs=state.images.filter(i=>i.product_id===id);
+  $("#productDetail").innerHTML=`<div class="product-detail">
+    <span class="badge">${productTypeLabel(p.product_type)}</span><h2>${safe(p.title)}</h2>
+    <p>${safe(p.description||"")}</p><h3>${fmt(p.price)}</h3>
+    ${p.sticker_count?`<p>تعداد استیکر: <b>${fa(p.sticker_count)}</b></p>`:""}
+    ${p.product_type==="ready"?`<p>موجودی: <b>${fa(p.stock_qty||0)}</b></p><p><b>این پک یک محصول آماده با طرح ثابت است و امکان تغییر طرح ندارد.</b></p>`:""}
+    <div class="detail-gallery">${imgs.map(i=>`<img src="${imageUrl(i.path)}" style="max-width:180px;border-radius:15px;margin:5px">`).join("")}</div>
+    <button class="btn primary" onclick="addToCart('${p.id}');closeModal('productModal')">اضافه به سفارش</button>
+  </div>`; openModal("productModal");
+};
+window.addToCart=id=>{
+  const p=state.products.find(x=>x.id===id); if(!p)return;
+  const existing=state.cart.find(x=>x.product_id===id);
+  if(existing){
+    if(p.product_type==="ready" && (p.stock_qty===null || existing.quantity<p.stock_qty)) existing.quantity++;
+  } else state.cart.push({product_id:id,quantity:1});
+  updateCartCount(); toast("به سبد اضافه شد 💥");
+};
+function updateCartCount(){ $("#cartCount").textContent=fa(state.cart.reduce((a,b)=>a+b.quantity,0)); }
+function renderCart(){
+  const wrap=$("#cartItems"); $("#cartEmpty").hidden=state.cart.length>0;
+  wrap.innerHTML=state.cart.map(item=>{
+    const p=state.products.find(x=>x.id===item.product_id); if(!p)return"";
+    return `<div class="cart-row"><div><b>${safe(p.title)}</b><br><small>${fmt(p.price)} × ${fa(item.quantity)}</small></div>
+    <div class="cart-controls">
+      ${p.product_type==="ready"?`<button type="button" class="qty-btn" onclick="changeQty('${p.id}',-1)">−</button><b>${fa(item.quantity)}</b><button type="button" class="qty-btn" onclick="changeQty('${p.id}',1)">+</button>`:""}
+      <button type="button" class="remove-btn" onclick="removeCart('${p.id}')">حذف</button>
+    </div></div>`;
+  }).join("");
+  const needs=state.cart.some(i=>["personal","custom"].includes(state.products.find(p=>p.id===i.product_id)?.product_type));
+  $("#photoUploadWrap").hidden=!needs;
+  updateSummary();
+}
+window.changeQty=(id,d)=>{
+  const i=state.cart.find(x=>x.product_id===id),p=state.products.find(x=>x.id===id); if(!i||!p)return;
+  i.quantity=Math.max(1,i.quantity+d);
+  if(p.stock_qty!==null)i.quantity=Math.min(i.quantity,p.stock_qty);
+  renderCart();updateCartCount();
+};
+window.removeCart=id=>{state.cart=state.cart.filter(x=>x.product_id!==id);renderCart();updateCartCount();};
+function cartSubtotal(){return state.cart.reduce((sum,i)=>sum+(state.products.find(p=>p.id===i.product_id)?.price||0)*i.quantity,0)}
+function updateSummary(){
+  const sub=cartSubtotal(); const shipping=$("#checkoutShipping").value==="post"?134000:0;
+  $("#sumSubtotal").textContent=fmt(sub);$("#sumShipping").textContent=shipping?fmt(shipping):"پس‌کرایه";$("#sumTotal").textContent=fmt(sub+shipping);
+}
+
+async function uploadCompressed(bucket,path,file,max=1600,quality=.82){
+  const blob=await compressImage(file,max,quality);
+  const {error}=await sb.storage.from(bucket).upload(path,blob,{contentType:"image/webp",upsert:false});
+  if(error)throw error; return path;
+}
+function compressImage(file,max=1600,quality=.82){
+  return new Promise((resolve,reject)=>{
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.width,h=img.height; const ratio=Math.min(1,max/Math.max(w,h)); w=Math.round(w*ratio);h=Math.round(h*ratio);
+      const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);
+      c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error("فشرده‌سازی عکس ناموفق بود"))},"image/webp",quality);
+    }; img.onerror=reject;img.src=url;
   });
-  $$('[data-buy-ready]').forEach(btn => btn.addEventListener('click', () => chooseReadyProduct(btn.dataset.buyReady, true)));
-  renderAdminProducts();
 }
 
-function escapeHtml(str='') {
-  return String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-}
-
-const packInput = $('#pack');
-const summaryPack = $('#summaryPack');
-const summaryPrice = $('#summaryPrice');
-const summaryShipping = $('#summaryShipping');
-const summaryTotal = $('#summaryTotal');
-const shippingInput = $('#shipping');
-const shippingButtons = $$('#shippingChoices button');
-const packButtons = $$('#packChoices button');
-const readyProductField = $('#readyProductField');
-const photosField = $('#photosField');
-const notesField = $('#notesField');
-const notesLabel = $('#notesLabel');
-const orderTip = $('#orderTip');
-const consentText = $('#consentText');
-
-function choosePack(value, scroll = false) {
-  if (!PACKS[value]) return;
-  packInput.value = value;
-  packButtons.forEach((b) => b.classList.toggle('active', b.dataset.value === value));
-  readyProductField.hidden = value !== 'ready';
-  photosField.hidden = value === 'ready';
-  notesField.hidden = false;
-  notesLabel.textContent = value === 'ready' ? 'یادداشت سفارش' : value === 'custom' ? 'تم / توضیحات طراحی' : 'توضیحات';
-  $('#notes').placeholder = value === 'ready' ? 'مثلاً توضیح درباره ارسال یا هماهنگی...' : value === 'custom' ? 'مثلاً: قرمز و مشکی، کارتونی، بدون متن...' : 'مثلاً: عکس شماره ۳ حتماً باشه...';
-  orderTip.textContent = value === 'ready' ? '🔒 طرح پک آماده ثابت است و سفارش دقیقاً مطابق محصول انتخاب‌شده ثبت می‌شود.' : '💡 عکس‌هایی که سوژه واضح‌تر و نور بهتری دارن، خروجی تمیزتری می‌دن.';
-  consentText.textContent = value === 'ready' ? 'تأیید می‌کنم محصول آماده انتخاب‌شده بدون تغییر طرح سفارش داده می‌شود.' : 'تأیید می‌کنم اطلاعات و عکس‌ها برای ساخت سفارش TehSticker ارسال می‌شن.';
-  updateSummary();
-  persistDraft();
-  if (scroll) $('#order').scrollIntoView({ behavior: 'smooth' });
-}
-
-function chooseReadyProduct(id, scroll = false) {
-  const product = products.find(p => p.id === id);
-  if (!product) return;
-  selectedReadyProductId = id;
-  readyProductSelect.value = id;
-  choosePack('ready', scroll);
-  updateSummary();
-}
-
-function updateSummary() {
-  const pack = PACKS[packInput.value];
-  const shipping = SHIPPING[selectedShipping];
-  if (!pack) {
-    summaryPack.textContent = 'هنوز انتخاب نکردی';
-    summaryPrice.textContent = '—';
-    summaryShipping.textContent = shipping ? shipping.note : 'انتخاب نشده';
-    summaryTotal.textContent = '—';
-    return;
-  }
-  if (packInput.value === 'ready') {
-    const product = products.find(p => p.id === selectedReadyProductId);
-    summaryPack.textContent = product ? `پک آماده — ${product.name}` : 'پک آماده';
-  } else summaryPack.textContent = pack.label;
-  const productPrice = couponApplied ? pack.price * (1 - FIRST_DISCOUNT) : pack.price;
-  summaryPrice.textContent = couponApplied ? `${faMoney(productPrice)} (با تخفیف)` : faMoney(pack.price);
-  summaryShipping.textContent = shipping ? shipping.note : 'انتخاب نشده';
-  if (!shipping) {
-    summaryTotal.textContent = '—';
-  } else if (selectedShipping === 'post') {
-    summaryTotal.textContent = faMoney(productPrice + POST_SHIPPING);
-  } else {
-    summaryTotal.textContent = `${faMoney(productPrice)} + پیک پس‌کرایه`;
-  }
-}
-
-function chooseShipping(value) {
-  if (!SHIPPING[value]) return;
-  selectedShipping = value;
-  shippingInput.value = value;
-  shippingButtons.forEach((b) => b.classList.toggle('active', b.dataset.shipping === value));
-  updateSummary();
-  persistDraft();
-}
-shippingButtons.forEach((b) => b.addEventListener('click', () => chooseShipping(b.dataset.shipping)));
-
-packButtons.forEach((b) => b.addEventListener('click', () => choosePack(b.dataset.value)));
-$$('.choose-pack').forEach((b) => b.addEventListener('click', () => choosePack(b.dataset.pack, true)));
-readyProductSelect.addEventListener('change', () => { selectedReadyProductId = readyProductSelect.value; updateSummary(); persistDraft(); });
-
-const photoInput = $('#photos');
-const preview = $('#preview');
-const counter = $('#photoCounter');
-const status = $('#formStatus');
-const dropzone = $('#dropzone');
-function renderFiles() {
-  preview.innerHTML = '';
-  selectedFiles.forEach((file, index) => {
-    const wrap = document.createElement('div'); wrap.className = 'preview-item';
-    const img = document.createElement('img'); img.alt = `عکس انتخاب‌شده ${index + 1}`;
-    const url = URL.createObjectURL(file); img.src = url; img.onload = () => URL.revokeObjectURL(url);
-    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-photo'; remove.textContent = '×'; remove.setAttribute('aria-label','حذف عکس');
-    remove.addEventListener('click', () => { selectedFiles.splice(index, 1); renderFiles(); });
-    wrap.append(img, remove); preview.appendChild(wrap);
-  });
-  counter.textContent = `${toFa(selectedFiles.length)} / ۱۰`;
-}
-function addFiles(files) {
-  const incoming = [...files].filter((f) => f.type.startsWith('image/'));
-  const openSlots = Math.max(0, 10 - selectedFiles.length);
-  selectedFiles = selectedFiles.concat(incoming.slice(0, openSlots));
-  renderFiles();
-  status.textContent = incoming.length > openSlots ? 'حداکثر ۱۰ عکس می‌تونی انتخاب کنی.' : `${toFa(selectedFiles.length)} عکس انتخاب شد.`;
-}
-photoInput.addEventListener('change', () => addFiles(photoInput.files));
-['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
-['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
-dropzone.addEventListener('drop', e => addFiles(e.dataTransfer.files));
-
-function getRegisteredUser() {
-  try { return JSON.parse(localStorage.getItem('tehsticker-user') || 'null'); } catch { return null; }
-}
-function refreshAccountUI() {
-  const user = getRegisteredUser();
-  const accountButton = $('#accountButton');
-  const discountBox = $('#discountBox');
-  if (user) {
-    accountButton.textContent = `سلام ${user.name || ''} ✦`;
-    discountBox.classList.add('registered');
-    discountBox.innerHTML = `<b>✓ عضو TehSticker</b><span>کد خرید اولت: <strong>${FIRST_COUPON}</strong></span>`;
-  }
-}
-
-const signupModal = $('#signupModal');
-function openSignup() {
-  signupModal.hidden = false; document.body.style.overflow = 'hidden';
-  const user = getRegisteredUser();
-  if (user) {
-    $('#signupName').value = user.name || ''; $('#signupPhone').value = user.phone || ''; $('#signupEmail').value = user.email || '';
-    $('#couponSuccess').hidden = false;
-  }
-}
-function closeSignup() { signupModal.hidden = true; document.body.style.overflow = ''; }
-$$('[data-open-signup]').forEach(btn => btn.addEventListener('click', openSignup));
-$$('[data-close-modal]').forEach(btn => btn.addEventListener('click', closeSignup));
-$('#signupForm').addEventListener('submit', (e) => {
+async function createOrder(e){
   e.preventDefault();
-  const name = $('#signupName').value.trim(); const phone = $('#signupPhone').value.trim(); const email = $('#signupEmail').value.trim();
-  if (!name) { $('#signupStatus').textContent = 'اسمت رو وارد کن.'; return; }
-  if (!validPhone(phone)) { $('#signupStatus').textContent = 'شماره موبایل رو به شکل 09xxxxxxxxx وارد کن.'; return; }
-  localStorage.setItem('tehsticker-user', JSON.stringify({ name, phone, email, coupon: FIRST_COUPON, registeredAt: new Date().toISOString() }));
-  $('#signupStatus').textContent = 'ثبت‌نام انجام شد ✓'; $('#couponSuccess').hidden = false;
-  $('#name').value = name; $('#phone').value = phone; refreshAccountUI(); persistDraft();
-});
-$('#copySignupCoupon').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(FIRST_COUPON); $('#copySignupCoupon').textContent = 'کپی شد ✓'; } catch {}
-});
-
-$('#applyCoupon').addEventListener('click', () => {
-  const value = $('#coupon').value.trim().toUpperCase();
-  const user = getRegisteredUser();
-  if (value === FIRST_COUPON && user) {
-    couponApplied = true; $('#couponStatus').textContent = '۱۰٪ تخفیف خرید اول اعمال شد ✓'; $('#couponStatus').style.color = '#237a2c'; updateSummary(); persistDraft();
-  } else if (value === FIRST_COUPON && !user) {
-    couponApplied = false; $('#couponStatus').textContent = 'برای استفاده از این کد اول ثبت‌نام کن.'; openSignup();
-  } else { couponApplied = false; $('#couponStatus').textContent = 'این کد معتبر نیست.'; updateSummary(); }
-});
-
-function validateForm() {
-  if (!packInput.value) return 'اول نوع سفارش رو انتخاب کن.';
-  if (packInput.value === 'ready' && !selectedReadyProductId) return 'یکی از طرح‌های آماده رو انتخاب کن.';
-  if (!$('#name').value.trim()) return 'اسمت رو وارد کن.';
-  if (!validPhone($('#phone').value)) return 'شماره تماس رو به شکل 09xxxxxxxxx وارد کن.';
-  if (!selectedShipping) return 'نحوه ارسال رو انتخاب کن.';
-  if (packInput.value !== 'ready' && selectedFiles.length === 0) return 'حداقل یک عکس انتخاب کن.';
-  if (!$('#consent').checked) return 'تأیید سفارش رو فعال کن.';
-  return '';
+  if(!state.user){ openAuth("login"); toast("اول وارد حسابت شو"); return; }
+  if(!state.cart.length){toast("سبدت خالیه",true);return;}
+  const photos=[...$("#orderPhotos").files];
+  const needs=state.cart.some(i=>["personal","custom"].includes(state.products.find(p=>p.id===i.product_id)?.product_type));
+  if(needs && photos.length===0){toast("برای پک شخصی/اختصاصی حداقل یک عکس انتخاب کن",true);return;}
+  if(photos.length>10){toast("حداکثر ۱۰ عکس می‌تونی بفرستی",true);return;}
+  const btn=$("#submitOrderBtn");btn.disabled=true;btn.textContent="در حال ثبت...";
+  try{
+    const {data,error}=await sb.rpc("create_order",{
+      p_items:state.cart,p_shipping_method:$("#checkoutShipping").value,
+      p_customer_name:$("#checkoutName").value,p_phone:$("#checkoutPhone").value,
+      p_province:$("#checkoutProvince").value,p_city:$("#checkoutCity").value,p_address:$("#checkoutAddress").value,
+      p_postal_code:$("#checkoutPostal").value||null,p_notes:$("#checkoutNotes").value||null,p_coupon_code:$("#checkoutCoupon").value||null
+    });
+    if(error)throw error;
+    for(let idx=0;idx<photos.length;idx++){
+      const path=`${state.user.id}/${data.order_id}/${Date.now()}-${idx}-${uid()}.webp`;
+      await uploadCompressed("order-files",path,photos[idx],1800,.82);
+      const {error:fe}=await sb.from("order_files").insert({order_id:data.order_id,user_id:state.user.id,kind:"customer_photo",path});
+      if(fe)throw fe;
+    }
+    state.currentOrder=data; state.cart=[]; updateCartCount(); closeModal("cartModal");
+    await loadSettings();
+    $("#paymentOrderNumber").textContent=data.order_number;$("#paymentAmount").textContent=fmt(data.total_amount);
+    $("#paymentCardNumber").textContent=state.settings?.card_number||"هنوز توسط مدیریت تنظیم نشده";
+    $("#paymentCardHolder").textContent=state.settings?.card_holder_name||"";
+    $("#receiptOrderId").value=data.order_id; openModal("paymentModal");
+  }catch(err){console.error(err);toast(orderError(err.message),true)}
+  finally{btn.disabled=false;btn.textContent="ثبت سفارش"}
+}
+function orderError(m){
+  if(m.includes("FIRST_PURCHASE_ONLY"))return"کد خرید اول فقط برای اولین سفارش قابل استفاده است.";
+  if(m.includes("INVALID_COUPON"))return"کد تخفیف معتبر نیست.";
+  if(m.includes("TEHRAN_COURIER_ONLY"))return"پیک فقط برای شهر تهران قابل انتخاب است.";
+  if(m.includes("OUT_OF_STOCK"))return"موجودی یکی از محصولات کافی نیست.";
+  return"ثبت سفارش انجام نشد. دوباره امتحان کن.";
+}
+async function submitReceipt(e){
+  e.preventDefault(); if(!state.user)return;
+  const file=$("#receiptFile").files[0],orderId=$("#receiptOrderId").value;if(!file)return;
+  const btn=e.submitter;btn.disabled=true;btn.textContent="در حال آپلود...";
+  try{
+    const path=`${state.user.id}/${orderId}/${Date.now()}-${uid()}.webp`;
+    await uploadCompressed("payment-receipts",path,file,1500,.8);
+    const {error}=await sb.from("payments").insert({order_id:orderId,user_id:state.user.id,amount:0,receipt_path:path});
+    if(error)throw error;
+    toast("رسید ارسال شد ✅"); closeModal("paymentModal"); await showMyOrders();
+  }catch(err){console.error(err);toast("ارسال رسید ناموفق بود",true)}
+  finally{btn.disabled=false;btn.textContent="ارسال رسید"}
 }
 
-function buildOrderText() {
-  const pack = PACKS[packInput.value];
-  const product = products.find(p => p.id === selectedReadyProductId);
-  const base = pack ? pack.price : 0; const finalPrice = couponApplied ? base * (1 - FIRST_DISCOUNT) : base;
-  const shipping = SHIPPING[selectedShipping];
-  const lines = ['💥 سفارش جدید TehSticker','',`اسم: ${$('#name').value.trim()}`,`شماره تماس: ${$('#phone').value.trim()}`,`نوع سفارش: ${pack ? pack.label : '—'}`];
-  if (packInput.value === 'ready' && product) { lines.push(`طرح آماده: ${product.name}`, `تعداد استیکر داخل پک: ${toFa(product.count)}`); }
-  if (packInput.value !== 'ready') lines.push(`تعداد عکس: ${toFa(selectedFiles.length)}`);
-  lines.push(`مبلغ محصول: ${faMoney(finalPrice)}`);
-  if (selectedShipping === 'post') {
-    lines.push(`نحوه ارسال: پست`, `هزینه ارسال: ${faMoney(POST_SHIPPING)}`, `جمع پرداختی: ${faMoney(finalPrice + POST_SHIPPING)}`);
-  } else if (selectedShipping === 'tehran-courier') {
-    lines.push(`نحوه ارسال: تهران — پیک`, `هزینه ارسال: پس‌کرایه`, `مبلغ فعلی: ${faMoney(finalPrice)} + هزینه پیک هنگام تحویل`);
-  }
-  if (couponApplied) lines.push(`کد تخفیف: ${FIRST_COUPON} (۱۰٪)`);
-  lines.push(`توضیحات: ${$('#notes').value.trim() || 'ندارد'}`);
-  return lines.join('\n');
+function openAuth(tab="login"){
+  openModal("authModal"); setAuthTab(tab);
 }
-
-const sharePanel = $('#sharePanel'); const shareSummary = $('#shareSummary');
-$('#orderForm').addEventListener('submit', (e) => {
-  e.preventDefault(); const error = validateForm(); if (error) { status.textContent = error; return; }
-  status.textContent = ''; persistDraft(); const pack = PACKS[packInput.value]; const product = products.find(p => p.id === selectedReadyProductId);
-  const detail = packInput.value === 'ready' && product ? `${product.name} (${toFa(product.count)} استیکر)` : `${toFa(selectedFiles.length)} عکس`;
-  shareSummary.textContent = `${$('#name').value.trim()}، ${pack.label} — ${detail} آماده ارساله.`; sharePanel.hidden = false;
-});
-$('#closeShare').addEventListener('click', () => { sharePanel.hidden = true; });
-$('#shareOrder').addEventListener('click', async () => {
-  const text = buildOrderText();
-  try {
-    const data = { title: 'TehSticker Order', text };
-    if (packInput.value !== 'ready' && selectedFiles.length && navigator.canShare && navigator.canShare({ files: selectedFiles })) data.files = selectedFiles;
-    if (navigator.share) await navigator.share(data);
-    else { await navigator.clipboard.writeText(text); status.textContent = 'متن سفارش کپی شد؛ توی پیام‌رسان دلخواهت Paste کن.'; sharePanel.hidden = true; }
-  } catch (err) { if (err?.name !== 'AbortError') status.textContent = 'ارسال مستقیم پشتیبانی نشد؛ از دکمه کپی استفاده کن.'; }
-});
-$('#copyOrder').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(buildOrderText()); $('#copyOrder').textContent = 'کپی شد ✓'; setTimeout(() => $('#copyOrder').textContent = 'کپی متن سفارش', 1400); }
-  catch { status.textContent = 'مرورگر اجازه Clipboard نداده.'; }
-});
-
-function persistDraft() {
-  const draft = { pack: packInput.value, readyProductId: selectedReadyProductId, shipping: selectedShipping, name: $('#name').value, phone: $('#phone').value, notes: $('#notes').value, coupon: $('#coupon').value, couponApplied };
-  localStorage.setItem('tehsticker-draft', JSON.stringify(draft));
+function setAuthTab(tab){
+  $$("[data-auth-tab]").forEach(b=>b.classList.toggle("active",b.dataset.authTab===tab));
+  $("#loginForm").hidden=tab!=="login";$("#signupForm").hidden=tab!=="signup";
 }
-$('#saveDraft').addEventListener('click', () => { persistDraft(); status.textContent = 'پیش‌نویس روی همین دستگاه ذخیره شد ✓ (عکس‌ها ذخیره نمی‌شن.)'; });
-['name','phone','notes','coupon'].forEach(id => $(`#${id}`).addEventListener('change', persistDraft));
-
-// Lightweight product manager for the static MVP. Open from footer or add ?admin=1 to the URL.
-const adminModal = $('#adminModal');
-function openAdmin() { adminModal.hidden = false; document.body.style.overflow = 'hidden'; renderAdminProducts(); }
-function closeAdmin() { adminModal.hidden = true; document.body.style.overflow = ''; }
-$('#adminAccess').addEventListener('click', openAdmin);
-$$('[data-close-admin]').forEach(btn => btn.addEventListener('click', closeAdmin));
-if (new URLSearchParams(location.search).get('admin') === '1') setTimeout(openAdmin, 200);
-
-function fileToDataURL(file) { return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); }); }
-$('#productForm').addEventListener('submit', async (e) => {
+async function signup(e){
   e.preventDefault();
-  const name = $('#productName').value.trim(); const count = Number($('#productCount').value); const tag = $('#productTag').value.trim() || 'READY PACK'; const imageFile = $('#productImage').files[0];
-  if (!name || !count) return;
-  let image = ''; if (imageFile) { try { image = await fileToDataURL(imageFile); } catch {} }
-  products.push({ id: uid(), name, count, tag, image, bg: '#f1e9dc', emoji: '💥' }); saveProducts(products); renderProducts(); e.target.reset();
-});
-function renderAdminProducts() {
-  const box = $('#adminProducts'); if (!box) return; box.innerHTML = '';
-  products.forEach(p => {
-    const row = document.createElement('div'); row.className = 'admin-item';
-    row.innerHTML = `<div><b>${escapeHtml(p.name)}</b><small>${toFa(p.count)} استیکر · ۹۵ هزار تومان</small></div><button type="button" data-remove-product="${p.id}">حذف</button>`;
-    box.appendChild(row);
-  });
-  $$('[data-remove-product]').forEach(btn => btn.addEventListener('click', () => {
-    if (!confirm('این محصول حذف شود؟')) return;
-    products = products.filter(p => p.id !== btn.dataset.removeProduct); saveProducts(products); if (selectedReadyProductId === btn.dataset.removeProduct) selectedReadyProductId = ''; renderProducts(); updateSummary();
-  }));
+  const email=$("#signupEmail").value.trim(),password=$("#signupPassword").value,name=$("#signupName").value.trim(),phone=$("#signupPhone").value.trim();
+  const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name,phone}}});
+  if(error){toast(error.message,true);return;}
+  if(data.session){state.user=data.user;await refreshIdentity();closeModal("authModal");toast("ثبت‌نام شد! کد TEHFIRST10 برای خرید اولت 🎉")}
+  else toast("ثبت‌نام انجام شد؛ ایمیلت رو برای تأیید چک کن.");
+}
+async function login(e){
+  e.preventDefault();const {data,error}=await sb.auth.signInWithPassword({email:$("#loginEmail").value.trim(),password:$("#loginPassword").value});
+  if(error){toast("ایمیل یا رمز عبور درست نیست",true);return;}state.user=data.user;await refreshIdentity();closeModal("authModal");toast("وارد شدی ⚡️");
+}
+async function logout(){await sb.auth.signOut();state.user=null;state.profile=null;state.isAdmin=false;updateAuthUI();toast("خارج شدی");}
+
+async function showMyOrders(){
+  if(!state.user){openAuth();return;}
+  const {data,error}=await sb.from("orders").select("*,order_items(*)").order("created_at",{ascending:false});
+  if(error){toast("سفارش‌ها لود نشدن",true);return;}
+  $("#myOrders").innerHTML=(data||[]).length?(data||[]).map(o=>`<article class="order-card">
+    <div class="order-top"><div><b>${safe(o.order_number)}</b><br><small>${new Date(o.created_at).toLocaleString("fa-IR")}</small></div><span class="status ${o.status}">${statusLabel(o.status)}</span></div>
+    <p>${o.order_items.map(i=>`${safe(i.title_snapshot)} × ${fa(i.quantity)}`).join("، ")}</p>
+    <b>${fmt(o.total_amount)}</b>
+    ${o.status==="awaiting_payment"?`<button class="btn primary" onclick='continuePayment(${JSON.stringify({order_id:o.id,order_number:o.order_number,total_amount:o.total_amount}).replace(/'/g,"&#39;")})'>ارسال رسید پرداخت</button>`:""}
+  </article>`).join(""):`<div class="empty">هنوز سفارشی نداری.</div>`;
+  openModal("ordersModal");
+}
+window.continuePayment=async o=>{await loadSettings();$("#paymentOrderNumber").textContent=o.order_number;$("#paymentAmount").textContent=fmt(o.total_amount);$("#paymentCardNumber").textContent=state.settings?.card_number||"هنوز تنظیم نشده";$("#paymentCardHolder").textContent=state.settings?.card_holder_name||"";$("#receiptOrderId").value=o.order_id;closeModal("ordersModal");openModal("paymentModal")};
+
+async function openAdmin(){
+  if(!state.isAdmin){toast("دسترسی مدیریت نداری",true);return;}openModal("adminModal");await loadAdminOrders();
+}
+async function loadAdminOrders(){
+  const {data,error}=await sb.from("orders").select("*,order_items(*),payments(*)").order("created_at",{ascending:false});
+  if(error){toast("سفارش‌ها لود نشدن",true);return;}
+  $("#adminOrders").innerHTML=(data||[]).map(o=>`<article class="admin-order-card">
+    <div class="admin-card-top"><div><b>${safe(o.order_number)}</b> — ${safe(o.customer_name)}<br><small>${safe(o.phone)} · ${safe(o.city)}</small></div><span class="status ${o.status}">${statusLabel(o.status)}</span></div>
+    <p>${o.order_items.map(i=>`${safe(i.title_snapshot)} × ${fa(i.quantity)}`).join("، ")}</p>
+    <p><b>${fmt(o.total_amount)}</b> · ارسال: ${o.shipping_method_id==="post"?"پست":"پیک تهران / پس‌کرایه"}</p>
+    <details><summary>آدرس و جزئیات</summary><p>${safe(o.province||"")} ${safe(o.city)} — ${safe(o.address)}</p><p>کد پستی: ${safe(o.postal_code||"-")}</p><p>توضیحات: ${safe(o.notes||"-")}</p></details>
+    <div class="admin-actions">
+      ${o.payments?.[0]?.status==="pending"?`<button class="btn primary" onclick="reviewPayment('${o.payments[0].id}','approved')">تأیید پرداخت</button><button class="btn danger" onclick="reviewPayment('${o.payments[0].id}','rejected')">رد رسید</button><button class="btn ghost" onclick="viewReceipt('${o.payments[0].receipt_path}')">دیدن رسید</button>`:""}
+      ${["paid","preparing","shipped"].includes(o.status)?`<select onchange="setOrderStatus('${o.id}',this.value)"><option value="">تغییر وضعیت...</option><option value="preparing">در حال آماده‌سازی</option><option value="shipped">ارسال شد</option><option value="completed">تکمیل شد</option><option value="cancelled">لغو</option></select>`:""}
+      <button class="btn ghost" onclick="viewOrderFiles('${o.id}')">عکس‌های مشتری</button>
+    </div>
+  </article>`).join("") || `<div class="empty">سفارشی نیست.</div>`;
+}
+window.reviewPayment=async(id,status)=>{const {error}=await sb.from("payments").update({status}).eq("id",id);if(error)return toast(error.message,true);toast(status==="approved"?"پرداخت تأیید شد":"رسید رد شد");await loadAdminOrders();await loadProducts()};
+window.setOrderStatus=async(id,status)=>{if(!status)return;const {error}=await sb.from("orders").update({status}).eq("id",id);if(error)return toast(error.message,true);await sb.from("order_status_history").insert({order_id:id,status,changed_by:state.user.id,note:"تغییر وضعیت توسط مدیریت"});toast("وضعیت تغییر کرد");await loadAdminOrders()};
+window.viewReceipt=async path=>{const {data,error}=await sb.storage.from("payment-receipts").createSignedUrl(path,120);if(error)return toast("رسید باز نشد",true);window.open(data.signedUrl,"_blank")};
+window.viewOrderFiles=async orderId=>{
+  const {data}=await sb.from("order_files").select("*").eq("order_id",orderId);if(!data?.length)return toast("عکسی برای این سفارش نیست");
+  for(const f of data){const {data:s}=await sb.storage.from("order-files").createSignedUrl(f.path,120);if(s?.signedUrl)window.open(s.signedUrl,"_blank")}
+};
+
+async function loadAdminProducts(){
+  await loadProducts();
+  $("#adminProducts").innerHTML=state.products.map(p=>`<article class="admin-product-card">
+    ${getProductImage(p)?`<img class="admin-product-thumb" src="${getProductImage(p)}">`:`<div class="admin-product-thumb"></div>`}
+    <div><b>${safe(p.title)}</b><br><small>${productTypeLabel(p.product_type)} · ${fmt(p.price)} ${p.product_type==="ready"?`· موجودی ${fa(p.stock_qty||0)}`:""}</small></div>
+    <div class="admin-actions"><button class="btn ghost" onclick="editProduct('${p.id}')">ویرایش</button><button class="btn danger" onclick="deleteProduct('${p.id}')">حذف</button></div>
+  </article>`).join("");
+}
+window.editProduct=id=>{
+  const p=state.products.find(x=>x.id===id);if(!p)return;$("#peId").value=p.id;$("#peTitle").textContent="ویرایش محصول";$("#peName").value=p.title;$("#peType").value=p.product_type;$("#peDescription").value=p.description||"";$("#pePrice").value=p.price;$("#peStickerCount").value=p.sticker_count||"";$("#peStock").value=p.stock_qty??"";$("#peActive").checked=p.is_active;openModal("productEditorModal")
+};
+window.deleteProduct=async id=>{if(!confirm("این محصول حذف شود؟"))return;const {error}=await sb.from("products").delete().eq("id",id);if(error)return toast(error.message,true);toast("محصول حذف شد");await loadAdminProducts()};
+function newProduct(){$("#productEditorForm").reset();$("#peId").value="";$("#peTitle").textContent="محصول جدید";$("#peType").value="ready";$("#pePrice").value=95000;$("#peActive").checked=true;openModal("productEditorModal")}
+async function saveProduct(e){
+  e.preventDefault();const id=$("#peId").value||null;
+  const payload={title:$("#peName").value.trim(),slug:id?state.products.find(p=>p.id===id).slug:slugify($("#peName").value),description:$("#peDescription").value,product_type:$("#peType").value,price:Number($("#pePrice").value),sticker_count:$("#peStickerCount").value?Number($("#peStickerCount").value):null,stock_qty:$("#peStock").value!==""?Number($("#peStock").value):null,is_active:$("#peActive").checked};
+  let productId=id;
+  if(id){const {error}=await sb.from("products").update(payload).eq("id",id);if(error)return toast(error.message,true)}
+  else{const {data,error}=await sb.from("products").insert(payload).select().single();if(error)return toast(error.message,true);productId=data.id}
+  const files=[...$("#peImages").files];
+  for(let i=0;i<files.length;i++){const path=`products/${productId}/${Date.now()}-${i}-${uid()}.webp`;await uploadCompressed("product-images",path,files[i],1600,.85);await sb.from("product_images").insert({product_id:productId,path,sort_order:i})}
+  closeModal("productEditorModal");toast("محصول ذخیره شد ✅");await loadAdminProducts();
+}
+async function loadAdminSettings(){
+  await loadSettings();$("#settingsCard").value=state.settings?.card_number||"";$("#settingsCardHolder").value=state.settings?.card_holder_name||"";$("#settingsPhone").value=state.settings?.support_phone||"";$("#settingsCoupon").value=state.settings?.first_order_coupon_code||"TEHFIRST10";
+}
+async function saveSettings(e){
+  e.preventDefault();const {error}=await sb.from("site_settings").update({card_number:$("#settingsCard").value,card_holder_name:$("#settingsCardHolder").value,support_phone:$("#settingsPhone").value,first_order_coupon_code:$("#settingsCoupon").value}).eq("id",1);
+  if(error)return toast(error.message,true);toast("تنظیمات ذخیره شد");await loadSettings();
 }
 
-renderProducts(); refreshAccountUI();
-try {
-  const user = getRegisteredUser(); if (user) { $('#name').value = user.name || ''; $('#phone').value = user.phone || ''; }
-  const draft = JSON.parse(localStorage.getItem('tehsticker-draft') || '{}');
-  if (draft.pack) choosePack(draft.pack);
-  if (draft.shipping && SHIPPING[draft.shipping]) chooseShipping(draft.shipping);
-  if (draft.readyProductId && products.some(p => p.id === draft.readyProductId)) { selectedReadyProductId = draft.readyProductId; readyProductSelect.value = draft.readyProductId; }
-  if (draft.name) $('#name').value = draft.name; if (draft.phone) $('#phone').value = draft.phone; if (draft.notes) $('#notes').value = draft.notes; if (draft.coupon) $('#coupon').value = draft.coupon;
-  couponApplied = Boolean(draft.couponApplied && getRegisteredUser() && draft.coupon?.toUpperCase() === FIRST_COUPON); updateSummary();
-} catch {}
+function bindUI(){
+  $("#authBtn").onclick=()=>openAuth("login");$("#heroSignup").onclick=()=>openAuth("signup");$("#bannerSignup").onclick=()=>openAuth("signup");$("#logoutBtn").onclick=logout;
+  $("#cartBtn").onclick=()=>{renderCart();openModal("cartModal")};$("#ordersNav").onclick=showMyOrders;$("#adminNav").onclick=openAdmin;
+  $("#checkoutShipping").onchange=updateSummary;$("#checkoutForm").onsubmit=createOrder;$("#receiptForm").onsubmit=submitReceipt;
+  $("#signupForm").onsubmit=signup;$("#loginForm").onsubmit=login;
+  $$("[data-auth-tab]").forEach(b=>b.onclick=()=>setAuthTab(b.dataset.authTab));
+  $$(".filter").forEach(b=>b.onclick=()=>{$$(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderProducts(b.dataset.filter)});
+  $("#refreshOrders").onclick=loadAdminOrders;$("#newProductBtn").onclick=newProduct;$("#productEditorForm").onsubmit=saveProduct;$("#settingsForm").onsubmit=saveSettings;
+  $$(".admin-tab").forEach(b=>b.onclick=async()=>{$$(".admin-tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");const t=b.dataset.adminTab;$("#adminOrdersPanel").hidden=t!=="orders";$("#adminProductsPanel").hidden=t!=="products";$("#adminSettingsPanel").hidden=t!=="settings";if(t==="orders")await loadAdminOrders();if(t==="products")await loadAdminProducts();if(t==="settings")await loadAdminSettings()});
+  sb.auth.onAuthStateChange(async(_,session)=>{state.user=session?.user||null;await refreshIdentity()});
+}
+init();

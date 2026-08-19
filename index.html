@@ -2,223 +2,276 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#ff4538" />
-  <meta name="description" content="TehSticker — پک‌های آماده، استیکر شخصی و طراحی اختصاصی." />
-  <meta property="og:title" content="TehSticker — بچسبونش 💥" />
-  <meta property="og:description" content="پک آماده یا استیکر از عکس‌های خودت؛ انتخاب با تو." />
-  <title>TehSticker — بچسبونش 💥</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#e21d2f" />
+  <title>TehSticker — استیکرهایی که مال خودتن</title>
+  <meta name="description" content="فروش پک آماده، پک شخصی و طراحی اختصاصی استیکر TehSticker" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
+  <div id="toast" class="toast"></div>
 
-  <div class="topline">
-    <span>TEHSTICKER CLUB</span><i>✦</i><span>READY PACKS · PERSONAL · CUSTOM</span><i>✦</i><span>بچسبونش 💥</span>
-  </div>
-
-  <div class="signup-bar" id="signupBar">
-    <div><b>خرید اولته؟</b> ثبت‌نام کن و <strong>۱۰٪ تخفیف خرید اول</strong> بگیر ⚡️</div>
-    <button type="button" data-open-signup>ثبت‌نام + گرفتن کد</button>
-  </div>
-
-  <header class="site-header" id="top">
-    <a class="brand" href="#top" aria-label="TehSticker">
-      <span class="brand-mark">💥</span>
-      <span class="brand-name">TehSticker</span>
-    </a>
-    <nav class="desktop-nav" aria-label="منوی اصلی">
-      <a href="#ready">پک آماده</a>
-      <a href="#services">پک شخصی</a>
-      <a href="#how">مراحل</a>
-      <a href="#faq">FAQ</a>
+  <header class="topbar">
+    <a class="brand" href="#home">TehSticker<span>💥</span></a>
+    <nav>
+      <a href="#shop">فروشگاه</a>
+      <a href="#how">چطور سفارش بدم؟</a>
+      <button class="link-btn" id="ordersNav" hidden>سفارش‌های من</button>
+      <button class="link-btn admin-only" id="adminNav" hidden>مدیریت</button>
     </nav>
-    <div class="header-actions">
-      <button class="account-button" type="button" data-open-signup id="accountButton">ثبت‌نام</button>
-      <a href="#order" class="nav-cta">سفارش ⚡️</a>
+    <div class="auth-actions">
+      <button class="btn ghost" id="authBtn">ورود / ثبت‌نام</button>
+      <button class="btn ghost" id="logoutBtn" hidden>خروج</button>
+      <button class="cart-btn" id="cartBtn">سبد <b id="cartCount">۰</b></button>
     </div>
   </header>
 
   <main>
-    <section class="hero shell">
-      <div class="hero-copy reveal">
-        <div class="kicker"><span></span> یه استیکر برای هر vibe</div>
-        <h1>بچسبونش.<br><em>هرجایی.</em></h1>
-        <p>از پک‌های آماده‌ی خود TehSticker انتخاب کن، عکس‌های خودتو استیکر کن، یا بده برات از صفر طراحی کنیم.</p>
-        <div class="hero-buttons">
-          <a href="#ready" class="button primary">پک‌های آماده رو ببین 💥</a>
-          <a href="#services" class="button secondary">از عکس خودم می‌خوام</a>
-        </div>
-        <div class="proof-row">
-          <span>💥 طرح آماده</span><span>📸 عکس خودت</span><span>🎨 طراحی اختصاصی</span>
+    <section class="hero" id="home">
+      <div>
+        <span class="eyebrow">YOUR PHOTOS. YOUR STICKERS.</span>
+        <h1>هرچی دوست داری،<br><span>استیکرش کن.</span></h1>
+        <p>پک آماده، پک شخصی و طراحی اختصاصی. انتخاب کن، سفارش بده و بقیه‌ش با ما 💥</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#shop">بریم سراغ پک‌ها</a>
+          <button class="btn light" id="heroSignup">ثبت‌نام + تخفیف خرید اول</button>
         </div>
       </div>
-
-      <div class="hero-stage reveal" aria-label="نمونه نمایشی استیکر">
-        <div class="blob blob-a"></div><div class="blob blob-b"></div>
-        <article class="photo-sticker s1"><div class="visual v1"><span>😎</span></div><b>MAIN CHARACTER</b></article>
-        <article class="photo-sticker s2"><div class="visual v2"><span>🍒</span></div><b>READY DROP</b></article>
-        <article class="photo-sticker s3"><div class="visual v3"><span>⚡</span></div><b>TEHSTICKER</b></article>
-        <span class="doodle d1">✦</span><span class="doodle d2">♥</span><span class="doodle d3">⚡</span>
+      <div class="hero-card">
+        <div class="sticker s1">TEH<br>STICKER</div>
+        <div class="sticker s2">⚡️</div>
+        <div class="sticker s3">♥️</div>
+        <div class="sticker s4">💥</div>
+        <p>DON'T JUST SAVE IT.<br><b>STICK IT.</b></p>
       </div>
     </section>
 
-    <section class="marquee" aria-hidden="true"><div><span>READY TO STICK</span><b>✦</b><span>MADE FROM YOUR PHOTOS</span><b>✦</b><span>DESIGNED BY TEHSTICKER</span><b>✦</b><span>READY TO STICK</span><b>✦</b><span>TEHSTICKER</span></div></section>
-
-    <section id="ready" class="section shell ready-section">
-      <div class="section-title reveal">
-        <div><div class="kicker"><span></span> بردار و بچسبون</div><h2>پک‌های آماده.</h2></div>
-        <p>این‌ها محصول آماده‌ان؛ طراحی‌شون ثابت و همینیه که می‌بینی. تعداد استیکر هر طرح فرق می‌کنه، ولی قیمت هر پک <b>۹۵ هزار تومان</b>ه.</p>
+    <section class="signup-banner">
+      <div>
+        <b>اولین سفارشته؟ 👀</b>
+        <span>ثبت‌نام کن و با کد <code>TEHFIRST10</code> ده درصد تخفیف بگیر.</span>
       </div>
-
-      <div class="ready-note reveal">
-        <span>🔒</span><div><b>بدون شخصی‌سازی</b><small>در پک آماده امکان تغییر رنگ، متن، تعداد استیکر داخل طرح یا جابه‌جایی اجزا وجود نداره.</small></div>
-      </div>
-
-      <div class="product-grid" id="productGrid" aria-live="polite"></div>
+      <button class="btn dark" id="bannerSignup">ثبت‌نام</button>
     </section>
 
-    <section id="services" class="section shell services-section">
-      <div class="section-title reveal">
-        <div><div class="kicker"><span></span> اگه می‌خوای خودت توش باشی</div><h2>دو مدل شخصی.</h2></div>
-        <p>عکس‌ها رو همون‌طور که هست آماده کنیم یا کامل با یک تم جدید بازطراحی‌شون کنیم؟</p>
-      </div>
-      <div class="pack-grid">
-        <article class="pack-card reveal">
-          <div class="pill">ساده و سریع</div><h3>پک شخصی</h3><p>عکس‌های خودت، آماده‌سازی برای چاپ و برش تمیز؛ بدون بازطراحی استایل.</p>
-          <div class="price"><strong>۱۲۹</strong><span>هزار<br>تومان</span></div>
-          <ul><li>۱۰ استیکر از عکس‌های ارسالی</li><li>آماده‌سازی + برش دور سوژه</li><li>بدون تغییر استایل عکس</li></ul>
-          <button class="choose-pack" data-pack="personal">پک شخصی رو می‌خوام</button>
-        </article>
-        <article class="pack-card featured reveal">
-          <div class="best">محبوب‌تر ⚡️</div><div class="pill">خاص‌تر</div><h3>طراحی اختصاصی</h3><p>عکس‌های تو با تم و استایل انتخابی بازطراحی می‌شن تا یک پک کاملاً مخصوص خودت داشته باشی.</p>
-          <div class="price"><strong>۱۷۹</strong><span>هزار<br>تومان</span></div>
-          <ul><li>۱۰ استیکر طراحی‌شده مخصوص تو</li><li>تم و استایل دلخواه</li><li>کاملاً شخصی و متفاوت 💥</li></ul>
-          <button class="choose-pack" data-pack="custom">طراحی اختصاصی رو می‌خوام</button>
-        </article>
-      </div>
-    </section>
-
-    <section id="how" class="dark-section section">
-      <div class="shell">
-        <div class="section-title light reveal"><div><div class="kicker light"><span></span> بستگی داره چی برداری</div><h2>سه راه برای Sticker شدن.</h2></div><p>پک آماده مستقیم می‌ره برای سفارش؛ دو پک شخصی با عکس‌های تو ساخته می‌شن.</p></div>
-        <div class="steps steps-three">
-          <article class="step reveal"><span>01</span><h3>پک آماده</h3><p>طرح موردعلاقه‌ت رو انتخاب کن. هیچ ادیتی لازم نیست؛ همون محصول رو سفارش می‌دی.</p></article>
-          <article class="step reveal"><span>02</span><h3>پک شخصی</h3><p>۱۰ عکس می‌فرستی؛ ما آماده‌شون می‌کنیم و دور سوژه برش می‌خورن.</p></article>
-          <article class="step reveal"><span>03</span><h3>طراحی اختصاصی</h3><p>۱۰ عکس + vibe و تمی که می‌خوای؛ طراحی‌شون می‌کنیم و بعد می‌رن برای چاپ.</p></article>
+    <section class="section" id="shop">
+      <div class="section-head">
+        <div>
+          <span class="kicker">SHOP</span>
+          <h2>چی می‌خوای استیکر کنی؟</h2>
+        </div>
+        <div class="filters">
+          <button class="filter active" data-filter="all">همه</button>
+          <button class="filter" data-filter="ready">پک آماده</button>
+          <button class="filter" data-filter="personal">شخصی</button>
+          <button class="filter" data-filter="custom">اختصاصی</button>
         </div>
       </div>
-    </section>
-
-    <section class="club shell reveal">
-      <div><div class="kicker light"><span></span> TEHSTICKER CLUB</div><h2>اول اینجا.<br>بعداً اینستا.</h2><p>دراپ‌های آماده، پشت‌صحنه‌ها و چیزای جدید رو اول برای اعضای کلاب می‌ذاریم.</p></div>
-      <div class="club-actions"><button class="button white" type="button" data-open-signup>عضو شم + کد تخفیف بگیرم</button><small>ثبت‌نام سایت رو هم از همین‌جا می‌تونی انجام بدی.</small></div>
-    </section>
-
-    <section id="order" class="section shell order-section">
-      <div class="order-wrap reveal">
-        <aside class="order-aside">
-          <div class="kicker"><span></span> بزن بریم</div><h2>سفارشت رو جمع کن.</h2><p id="orderAsideText">نوع سفارش رو انتخاب کن. برای پک‌های شخصی عکس می‌فرستی؛ پک آماده فقط انتخاب و خرید می‌شه.</p>
-          <div class="live-total"><small>انتخاب فعلی</small><strong id="summaryPack">هنوز انتخاب نکردی</strong><div><span>مبلغ محصول</span><b id="summaryPrice">—</b></div><div class="summary-shipping"><span>ارسال</span><b id="summaryShipping">انتخاب نشده</b></div><div class="summary-grand"><span>جمع پرداختی</span><b id="summaryTotal">—</b></div></div>
-          <div class="discount-box" id="discountBox"><b>⚡️ خرید اول؟</b><span>با ثبت‌نام، کد <strong>TEHFIRST10</strong> برای ۱۰٪ تخفیف خرید اول می‌گیری.</span><button type="button" data-open-signup>ثبت‌نام</button></div>
-          <div class="tiny-tip" id="orderTip">💡 برای پک شخصی، عکس‌های واضح و پرنور خروجی تمیزتری می‌دن.</div>
-        </aside>
-
-        <form id="orderForm" class="order-form" novalidate>
-          <div class="field full"><label for="pack">نوع سفارش</label><div class="segmented three" id="packChoices"><button type="button" data-value="ready"><b>پک آماده</b><small>۹۵ هزار</small></button><button type="button" data-value="personal"><b>پک شخصی</b><small>۱۲۹ هزار</small></button><button type="button" data-value="custom"><b>طراحی اختصاصی</b><small>۱۷۹ هزار</small></button></div><input type="hidden" id="pack" required></div>
-
-          <div class="field full conditional" id="readyProductField" hidden>
-            <label for="readyProduct">طرح آماده</label>
-            <select id="readyProduct"><option value="">یک طرح رو انتخاب کن</option></select>
-            <small class="field-note">طرح‌های آماده قابل تغییر نیستن؛ دقیقاً محصول نمایش‌داده‌شده ارسال می‌شه.</small>
-          </div>
-
-          <div class="field"><label for="name">اسم</label><input id="name" autocomplete="name" placeholder="مثلاً سارا" required></div>
-          <div class="field"><label for="phone">شماره تماس</label><input id="phone" autocomplete="tel" inputmode="tel" placeholder="09xxxxxxxxx" required></div>
-          <div class="field full shipping-field"><label for="shipping">نحوه ارسال</label><div class="segmented shipping-options" id="shippingChoices"><button type="button" data-shipping="post"><b>📦 پست</b><small>۱۳۴ هزار تومان</small></button><button type="button" data-shipping="tehran-courier"><b>🛵 تهران — پیک</b><small>پس‌کرایه</small></button></div><input type="hidden" id="shipping" required><small class="field-note">هزینه پست به مبلغ سفارش اضافه می‌شه. هزینه پیک تهران موقع تحویل و به‌صورت پس‌کرایه پرداخت می‌شه.</small></div>
-
-          <div class="field full"><label for="coupon">کد تخفیف</label><div class="coupon-row"><input id="coupon" autocomplete="off" placeholder="مثلاً TEHFIRST10"><button type="button" id="applyCoupon">اعمال کد</button></div><small class="field-note" id="couponStatus"></small></div>
-
-          <div class="field full" id="notesField"><label for="notes" id="notesLabel">تم / توضیحات</label><textarea id="notes" rows="4" placeholder="مثلاً: قرمز و مشکی، کارتونی، بدون متن..."></textarea></div>
-
-          <div class="field full" id="photosField">
-            <label>عکس‌ها <span id="photoCounter">۰ / ۱۰</span></label>
-            <label class="dropzone" for="photos" id="dropzone"><input id="photos" type="file" accept="image/*" multiple hidden><span class="plus">＋</span><div><b>عکس‌هاتو انتخاب کن</b><small>تا ۱۰ عکس · JPG / PNG / HEIC در صورت پشتیبانی مرورگر</small></div></label>
-            <div class="preview-grid" id="preview" aria-live="polite"></div>
-          </div>
-
-          <label class="consent full"><input id="consent" type="checkbox" required><span id="consentText">تأیید می‌کنم اطلاعات و عکس‌ها برای ساخت سفارش TehSticker ارسال می‌شن.</span></label>
-          <div class="form-actions full"><button class="button primary big" type="submit">آماده‌کردن سفارش 💥</button><button class="button secondary big" type="button" id="saveDraft">ذخیره پیش‌نویس</button></div>
-          <p class="status full" id="formStatus" role="status"></p>
-        </form>
-      </div>
-
-      <div class="share-panel" id="sharePanel" hidden>
-        <button class="close-share" id="closeShare" aria-label="بستن">×</button>
-        <span class="share-emoji">💥</span><h3>سفارشت آماده‌ست!</h3><p id="shareSummary"></p>
-        <button class="button primary big" id="shareOrder">ارسال سفارش</button>
-        <button class="button secondary big" id="copyOrder">کپی متن سفارش</button>
-        <small>روی موبایل Share Sheet باز می‌شه. برای پک‌های شخصی، اگر مرورگر پشتیبانی کنه عکس‌ها هم همراه متن ارسال می‌شن.</small>
+      <div id="productsGrid" class="products-grid">
+        <div class="loading">در حال گرفتن محصولات...</div>
       </div>
     </section>
 
-    <section id="faq" class="section shell faq-section">
-      <div class="section-title reveal"><div><div class="kicker"><span></span> قبل از DM کردن 😌</div><h2>سؤال‌های پرتکرار.</h2></div></div>
-      <div class="faq-list reveal">
-        <details><summary>پک آماده دقیقاً چیه؟ <span>＋</span></summary><p>یک محصول آماده با طراحی ثابت خود TehSticker ـه. مشتری فقط طرح رو انتخاب و سفارش می‌ده؛ امکان تغییر رنگ، متن یا اجزای طراحی وجود نداره.</p></details>
-        <details><summary>پک آماده چند تا استیکر داره؟ <span>＋</span></summary><p>بسته به طرح متفاوته. تعداد دقیق روی کارت هر محصول نوشته می‌شه. قیمت فعلی هر پک آماده ۹۵ هزار تومنه.</p></details>
-        <details><summary>فرق پک شخصی و طراحی اختصاصی چیه؟ <span>＋</span></summary><p>پک شخصی از خود عکس‌های ارسالی آماده و برش می‌خوره؛ در طراحی اختصاصی، عکس‌ها با تم و استایل دلخواه بازطراحی می‌شن.</p></details>
-        <details><summary>ارسال سفارش‌ها چطوریه؟ <span>＋</span></summary><p>ارسال با پست ۱۳۴ هزار تومنه و به مبلغ سفارش اضافه می‌شه. برای تهران می‌تونی پیک انتخاب کنی؛ هزینه پیک هنگام تحویل و به‌صورت پس‌کرایه پرداخت می‌شه.</p></details>
-        <details><summary>کد خرید اول چطوریه؟ <span>＋</span></summary><p>در این نسخه با ثبت‌نام، کد TEHFIRST10 برای ۱۰٪ تخفیف خرید اول فعال می‌شه.</p></details>
-        <details><summary>ثبت‌نام و سفارش الان واقعی ذخیره می‌شن؟ <span>＋</span></summary><p>در نسخه‌ی فعلی، اطلاعات روی همین دستگاه ذخیره می‌شن. برای سایت آنلاین نهایی باید ثبت‌نام، محصولات و سفارش‌ها به دیتابیس و پنل مدیریت واقعی وصل بشن.</p></details>
+    <section class="section how" id="how">
+      <div class="section-head">
+        <div><span class="kicker">HOW IT WORKS</span><h2>سه قدم تا استیکرت</h2></div>
+      </div>
+      <div class="steps">
+        <article><b>01</b><h3>پکت رو انتخاب کن</h3><p>پک آماده رو همون‌طور که هست بخر، یا پک شخصی/اختصاصی انتخاب کن.</p></article>
+        <article><b>02</b><h3>عکس‌هات رو بفرست</h3><p>برای پک شخصی و اختصاصی تا ۱۰ عکس داخل خود سایت آپلود کن.</p></article>
+        <article><b>03</b><h3>کارت‌به‌کارت + رسید</h3><p>سفارش ثبت می‌شه، کارت‌به‌کارت می‌کنی و عکس رسید رو آپلود می‌کنی.</p></article>
+      </div>
+    </section>
+
+    <section class="section shipping">
+      <div class="shipping-card">
+        <span>📦</span><div><b>ارسال با پست</b><small>۱۳۴ هزار تومان — به مبلغ سفارش اضافه می‌شود.</small></div>
+      </div>
+      <div class="shipping-card">
+        <span>🛵</span><div><b>تهران با پیک</b><small>پس‌کرایه — هزینه پیک موقع تحویل پرداخت می‌شود.</small></div>
       </div>
     </section>
   </main>
 
   <footer>
-    <div><div class="footer-logo">TehSticker 💥</div><p>عکس‌هات، vibe‌ت، استیکر‌هات.</p><small>نسخه MVP فروشگاه</small></div>
-    <div class="footer-nav"><a href="#ready">پک آماده</a><a href="#services">پک شخصی</a><a href="#order">سفارش</a><button type="button" class="footer-link" id="adminAccess">مدیریت محصولات</button></div>
+    <b>TehSticker 💥</b>
+    <div>@tehsticker — Instagram & Telegram</div>
+    <small>تهران، ایران</small>
   </footer>
 
-  <div class="modal" id="signupModal" hidden>
-    <div class="modal-backdrop" data-close-modal></div>
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
-      <button class="modal-close" type="button" data-close-modal aria-label="بستن">×</button>
-      <div class="modal-icon">⚡️</div>
-      <h2 id="signupTitle">عضو TehSticker شو.</h2>
-      <p>ثبت‌نام کن تا کد ۱۰٪ تخفیف خرید اولت فعال شه و بعداً دراپ‌های جدید رو هم زودتر ببینی.</p>
-      <form id="signupForm" class="modal-form">
-        <label>اسم<input id="signupName" placeholder="اسمت" required></label>
-        <label>شماره موبایل<input id="signupPhone" inputmode="tel" placeholder="09xxxxxxxxx" required></label>
-        <label>ایمیل <small>اختیاری</small><input id="signupEmail" type="email" placeholder="you@example.com"></label>
-        <button class="button primary big" type="submit">ثبت‌نام و گرفتن کد 💥</button>
-        <p class="modal-status" id="signupStatus"></p>
-      </form>
-      <div class="coupon-success" id="couponSuccess" hidden><small>کد خرید اول تو</small><strong>TEHFIRST10</strong><button type="button" id="copySignupCoupon">کپی کد</button></div>
-    </section>
-  </div>
+  <!-- AUTH MODAL -->
+  <dialog id="authModal" class="modal">
+    <button class="modal-close" data-close="authModal">×</button>
+    <div class="tabs">
+      <button class="tab active" data-auth-tab="login">ورود</button>
+      <button class="tab" data-auth-tab="signup">ثبت‌نام</button>
+    </div>
+    <form id="loginForm" class="form">
+      <h3>خوش برگشتی ⚡️</h3>
+      <label>ایمیل<input type="email" id="loginEmail" required></label>
+      <label>رمز عبور<input type="password" id="loginPassword" minlength="6" required></label>
+      <button class="btn primary" type="submit">ورود</button>
+    </form>
+    <form id="signupForm" class="form" hidden>
+      <h3>عضو TehSticker شو 💥</h3>
+      <label>اسم و فامیل<input id="signupName" required></label>
+      <label>شماره موبایل<input id="signupPhone" inputmode="tel" required></label>
+      <label>ایمیل<input type="email" id="signupEmail" required></label>
+      <label>رمز عبور<input type="password" id="signupPassword" minlength="6" required></label>
+      <button class="btn primary" type="submit">ثبت‌نام و گرفتن کد تخفیف</button>
+      <small>بعد از ثبت‌نام، کد خرید اول: <b>TEHFIRST10</b></small>
+    </form>
+  </dialog>
 
-  <div class="modal" id="adminModal" hidden>
-    <div class="modal-backdrop" data-close-admin></div>
-    <section class="modal-card admin-card" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
-      <button class="modal-close" type="button" data-close-admin aria-label="بستن">×</button>
-      <div class="kicker"><span></span> فقط برای خودت</div>
-      <h2 id="adminTitle">مدیریت پک‌های آماده</h2>
-      <p>تو این MVP، محصولاتی که اضافه می‌کنی روی همین مرورگر ذخیره می‌شن. بعداً این بخش رو به پنل مدیریت آنلاین و دیتابیس وصل می‌کنیم.</p>
-      <form id="productForm" class="admin-form">
-        <label>نام محصول<input id="productName" placeholder="مثلاً Drop 01 — Cherry" required></label>
-        <label>تعداد استیکر<input id="productCount" type="number" min="1" max="99" placeholder="مثلاً 12" required></label>
-        <label>برچسب کوتاه<input id="productTag" placeholder="مثلاً NEW DROP"></label>
-        <label class="full-admin">عکس محصول<input id="productImage" type="file" accept="image/*"></label>
-        <button class="button primary" type="submit">اضافه‌کردن محصول +</button>
-      </form>
-      <div class="admin-products" id="adminProducts"></div>
-    </section>
-  </div>
+  <!-- PRODUCT MODAL -->
+  <dialog id="productModal" class="modal wide">
+    <button class="modal-close" data-close="productModal">×</button>
+    <div id="productDetail"></div>
+  </dialog>
 
+  <!-- CART / CHECKOUT -->
+  <dialog id="cartModal" class="modal wide">
+    <button class="modal-close" data-close="cartModal">×</button>
+    <div class="checkout-layout">
+      <section>
+        <h3>سبد سفارش</h3>
+        <div id="cartItems"></div>
+        <div id="cartEmpty" class="empty">سبدت هنوز خالیه 👀</div>
+      </section>
+      <form id="checkoutForm" class="form checkout-form">
+        <h3>اطلاعات ارسال</h3>
+        <label>نام و نام خانوادگی<input id="checkoutName" required></label>
+        <label>شماره موبایل<input id="checkoutPhone" required></label>
+        <div class="row2">
+          <label>استان<input id="checkoutProvince"></label>
+          <label>شهر<input id="checkoutCity" required></label>
+        </div>
+        <label>آدرس<textarea id="checkoutAddress" rows="3" required></textarea></label>
+        <label>کد پستی<input id="checkoutPostal"></label>
+        <label>روش ارسال
+          <select id="checkoutShipping" required>
+            <option value="post">پست — ۱۳۴,۰۰۰ تومان</option>
+            <option value="tehran_courier">تهران با پیک — پس‌کرایه</option>
+          </select>
+        </label>
+        <label>کد تخفیف<input id="checkoutCoupon" placeholder="مثلاً TEHFIRST10"></label>
+        <label>توضیحات<textarea id="checkoutNotes" rows="2"></textarea></label>
+
+        <div id="photoUploadWrap" hidden>
+          <label>عکس‌های سفارش (حداکثر ۱۰ عکس)
+            <input type="file" id="orderPhotos" accept="image/jpeg,image/png,image/webp" multiple>
+          </label>
+          <small id="photoHint">برای پک شخصی/اختصاصی، عکس‌ها رو همین‌جا انتخاب کن.</small>
+        </div>
+
+        <div class="summary">
+          <div><span>مبلغ محصولات</span><b id="sumSubtotal">۰ تومان</b></div>
+          <div><span>ارسال</span><b id="sumShipping">۱۳۴,۰۰۰ تومان</b></div>
+          <div class="total"><span>جمع تقریبی</span><b id="sumTotal">۰ تومان</b></div>
+          <small>تخفیف نهایی روی سرور هنگام ثبت سفارش محاسبه می‌شود.</small>
+        </div>
+        <button class="btn primary" id="submitOrderBtn" type="submit">ثبت سفارش</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- PAYMENT -->
+  <dialog id="paymentModal" class="modal">
+    <button class="modal-close" data-close="paymentModal">×</button>
+    <div class="payment-box">
+      <span class="kicker">CARD TO CARD</span>
+      <h3>سفارشت ثبت شد 💥</h3>
+      <p>شماره سفارش: <b id="paymentOrderNumber"></b></p>
+      <div class="card-number-box">
+        <small>مبلغ قابل پرداخت</small>
+        <strong id="paymentAmount"></strong>
+        <small>شماره کارت</small>
+        <strong id="paymentCardNumber">هنوز توسط مدیریت تنظیم نشده</strong>
+        <small id="paymentCardHolder"></small>
+      </div>
+      <form id="receiptForm" class="form">
+        <input type="hidden" id="receiptOrderId">
+        <label>عکس رسید کارت‌به‌کارت<input type="file" id="receiptFile" accept="image/jpeg,image/png,image/webp" required></label>
+        <button class="btn primary" type="submit">ارسال رسید</button>
+      </form>
+      <small>بعد از بررسی رسید، وضعیت سفارش داخل «سفارش‌های من» تغییر می‌کنه.</small>
+    </div>
+  </dialog>
+
+  <!-- MY ORDERS -->
+  <dialog id="ordersModal" class="modal wide">
+    <button class="modal-close" data-close="ordersModal">×</button>
+    <h3>سفارش‌های من</h3>
+    <div id="myOrders" class="orders-list"></div>
+  </dialog>
+
+  <!-- ADMIN -->
+  <dialog id="adminModal" class="modal fullscreen">
+    <button class="modal-close" data-close="adminModal">×</button>
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <b>TehSticker Admin 💥</b>
+        <button class="admin-tab active" data-admin-tab="orders">سفارش‌ها</button>
+        <button class="admin-tab" data-admin-tab="products">محصولات</button>
+        <button class="admin-tab" data-admin-tab="settings">تنظیمات</button>
+      </aside>
+      <section class="admin-content">
+        <div id="adminOrdersPanel">
+          <div class="admin-head"><h2>سفارش‌ها</h2><button class="btn ghost" id="refreshOrders">↻ بروزرسانی</button></div>
+          <div id="adminOrders" class="admin-orders"></div>
+        </div>
+
+        <div id="adminProductsPanel" hidden>
+          <div class="admin-head"><h2>محصولات</h2><button class="btn primary" id="newProductBtn">+ محصول جدید</button></div>
+          <div id="adminProducts" class="admin-products"></div>
+        </div>
+
+        <div id="adminSettingsPanel" hidden>
+          <h2>تنظیمات فروشگاه</h2>
+          <form id="settingsForm" class="form narrow">
+            <label>شماره کارت<input id="settingsCard"></label>
+            <label>نام صاحب کارت<input id="settingsCardHolder"></label>
+            <label>شماره پشتیبانی<input id="settingsPhone"></label>
+            <label>کد تخفیف خرید اول<input id="settingsCoupon" value="TEHFIRST10"></label>
+            <button class="btn primary">ذخیره تنظیمات</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- PRODUCT ADMIN EDITOR -->
+  <dialog id="productEditorModal" class="modal wide">
+    <button class="modal-close" data-close="productEditorModal">×</button>
+    <form id="productEditorForm" class="form">
+      <input type="hidden" id="peId">
+      <h3 id="peTitle">محصول جدید</h3>
+      <div class="row2">
+        <label>نام محصول<input id="peName" required></label>
+        <label>نوع
+          <select id="peType">
+            <option value="ready">پک آماده</option>
+            <option value="personal">پک شخصی</option>
+            <option value="custom">طراحی اختصاصی</option>
+          </select>
+        </label>
+      </div>
+      <label>توضیحات<textarea id="peDescription" rows="3"></textarea></label>
+      <div class="row3">
+        <label>قیمت (تومان)<input type="number" id="pePrice" value="95000" min="0" required></label>
+        <label>تعداد استیکر<input type="number" id="peStickerCount" min="1"></label>
+        <label>موجودی<input type="number" id="peStock" min="0" placeholder="برای آماده"></label>
+      </div>
+      <label>عکس‌های محصول<input type="file" id="peImages" accept="image/jpeg,image/png,image/webp" multiple></label>
+      <label class="checkbox"><input type="checkbox" id="peActive" checked> محصول فعال باشد</label>
+      <button class="btn primary" type="submit">ذخیره محصول</button>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
